@@ -1,123 +1,156 @@
-
-import pyttsx3                                    # converts text to speech
-import datetime                                   # required to resolve any query regarding date and time
-import speech_recognition as sr                   # required to return a string output by taking microphone input from the user
-import wikipedia                                  # required to resolve any query regarding wikipedia
-import webbrowser                                 # required to open the prompted application in web browser
-import os.path                                    # required to fetch the contents from the specified folder/directory
-import smtplib                                    # required to work with queries regarding e-mail
-
+mport pyttsx3 #pip install pyttsx3
+import requests
+import speech_recognition as sr #pip install speechRecognition
+import datetime
+import wikipedia #pip install wikipedia
+import webbrowser
+import os
+import pyjokes
 
 engine = pyttsx3.init('sapi5')
-voices = engine.getProperty('voices')             # gets you the details of the current voices
-engine.setProperty('voice',voices[0].id)          # 0-male voice , 1-female voice
+voices = engine.getProperty('voices')
+# print(voices[1].id)
+engine.setProperty('voice', voices[0].id)
 
 
-
-def speak(audio):                                # function for assistant to speak
+def speak(audio):
     engine.say(audio)
-    engine.runAndWait()                          # without this command, the assistant won't be audible to us
+    engine.runAndWait()
 
+def rec_audio():
+    recog = sr.Recognizer()
 
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recog.listen(source)
 
-def wishme():                                    # function to wish the user according to the daytime
+    data = " "
+
+    try:
+        data = recog.recognize_google(audio)
+        print("You said: " + data)
+    except sr.UnknownValueError:
+        print("Assistant could not understand the audio")
+    except sr.RequestError as ex:
+        print("Request Error from Google Speech Recognition" + ex)
+
+    return data
+
+def wishMe():
     hour = int(datetime.datetime.now().hour)
     if hour>=0 and hour<12:
-        speak('Good Morning')
+        speak("Good Morning!")
 
-    elif hour>12 and hour<18:
-        speak('Good Afternoon')
+    elif hour>=12 and hour<18:
+        speak("Good Afternoon!")
 
     else:
-        speak('Good Evening')
+        speak("Good Evening!")
 
-    speak('Hello Sir,im constellation')
+    speak("I am name Sir. Please tell me how may I help you")
 
+def takeCommand():
+    #It takes microphone input from the user and returns string output
 
-def takecommand():                               # function to take an audio input from the user
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        print('Listening...')
-        r.pause_threshold = 2
+        print("Listening...")
+        r.pause_threshold = 1
         audio = r.listen(source)
 
+    try:
+        print("Recognizing...")
+        query = r.recognize_google(audio, language='en-in')
+        print(f"User said: {query}\n")
 
-    try:                                            # error handling
-        print('Recognizing...')
-        query = r.recognize_google(audio,language = 'en-in')  # using google for voice recognition
-        print(f'User said: {query}\n')
-
-    except Exception as e :
-        print('Say that again please...')        # 'say that again' will be printed in case of improper voice
-        return 'None'
+    except Exception as e:
+        # print(e)
+        print("Say that again please...")
+        return "None"
     return query
 
-def sendemail(to,content):                       # function to send email
-    server = smtplib.SMTP('smtp.gmail.com',587)
-    server.ehlo()
-    server.starttls()
-    server.login('senders_eamil@gmail.com','senders_password')
-    server.sendmail('senders_email@gmail.com',to,content)
-    server.close()
 
-
-if __name__ == '__main__' :                      # execution control
-    wishme()
+if __name__ == "__main__":
+    wishMe()
     while True:
-        query = takecommand().lower()  # converts user asked query into lower case
+    # if 1:
+        query = takeCommand().lower()
 
-        # The whole logic for execution of tasks based on user asked query
+        # Logic for executing tasks based on query
 
-        if 'wikipedia' in query :
-            speak('Searching Wikipedia....')
-            query = query.replace('wikipedia','')
-            results = wikipedia.summary(query, sentences = 5)
+        if 'what is' in query:
+            speak('mmmm...')
+            query = query.replace("wikipedia", "")
+            results = wikipedia.summary(query, sentences=2)
+            speak(""
+                  "")
             print(results)
             speak(results)
 
-        elif 'open youtube' in query :
-            webbrowser.open('youtube.com')
+        elif 'open youtube' in query:
+            webbrowser.open("youtube.com")
 
-        elif 'open google' in query :
-            webbrowser.open('google.com')
+        elif 'open google' in query:
+            webbrowser.open("google.com")
 
-        elif 'play music' in query :
-            speak('okay boss')
-            music_dir = 'music_dir_of_the_user'
+        elif 'open stackoverflow' in query:
+            webbrowser.open("stackoverflow.com")
+        elif "weather" in query.lower():
+            api_key="8ef61edcf1c576d65d836254e11ea420"
+            base_url="https://api.openweathermap.org/data/2.5/weather?"
+            speak("whats the city name")
+            city_name=takeCommand()
+            complete_url=base_url+"appid="+api_key+"&q="+city_name
+            response = requests.get(complete_url)
+            x=response.json()
+            if x["cod"]!="404":
+                y=x["main"]
+                current_temperature = y["temp"]
+                current_humidiy = y["humidity"]
+                z = x["weather"]
+                weather_description = z[0]["description"]
+                speak(" Temperature in kelvin unit is " +
+                      str(current_temperature) +
+                      "\n humidity in percentage is " +
+                      str(current_humidiy) +
+                      "\n description  " +
+                      str(weather_description))
+                print(" Temperature in kelvin unit = " +
+                      str(current_temperature) +
+                      "\n humidity (in percentage) = " +
+                      str(current_humidiy) +
+                      "\n description = " +
+                      str(weather_description))
+
+            else:
+                speak(" City Not Found ")
+
+
+
+        elif 'play music' in query:
+            music_dir = 'music'
             songs = os.listdir(music_dir)
-            os.startfile(os.path.join(music_dir,songs[0]))
+            print(songs)
+            os.startfile(os.path.join(music_dir, songs[0]))
 
+        elif 'the time' in query:
+            strTime = datetime.datetime.now().strftime("%H:%M:%S")
+            speak(f"Sir, the time is {strTime}")
 
-        elif 'time' in query :
-            strtime = datetime.datetime.now().strftime('%H:%M:%S')
-            speak(f'Sir the time is {strtime}')
+        elif 'open code' in query:
+            codePath = ""
+            os.startfile(codePath)
 
+        elif "record" in query:
+            rec_audio()
 
-        elif 'open stack overflow' in query :
-            webbrowser.open('stackoverflow.com')
+        elif "joke" in query:
 
-        elif 'open free code camp' in query :
-            webbrowser.open('freecodecamp.org')
+            # using get_joke() to generate a single joke
+            # language is english
+            # category is neutral
+            My_joke = pyjokes.get_joke(language="en", category="neutral")
 
-        elif 'pycharm' in query :
-            codepath = 'pycharm_directory_of_your_computer'
-            os.startfile(codepath)
-
-        elif 'email' in query :
-            try:
-                speak('what should i write in the email?')
-                content = takecommand()
-                to = 'reciever_email@gmail.com'
-                sendemail(to, content)
-                speak('email has been sent')
-            except Exception as e:
-                print(e)
-                speak('Sorry, I am not able to send this email')
-
-        elif 'exit' in query:
-            speak('okay boss, please call me when you need me')
-            quit()
-
-            # elif "" in query:
-            # Command go here
-            # For adding more commands
+            print(My_joke)
+            speak(My_joke)
+# elif "" in query:
